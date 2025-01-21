@@ -42,7 +42,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 			{
 				Type = domainEvent.GetType().FullName,
 				Content = JsonSerializer.Serialize((object)domainEvent, options), // Cast to object to ensure proper serialization
-				OccurredOnUtc = DateTime.UtcNow
+				OccurredOnUtc = DateTime.UtcNow,
+				ProcessedOnUtc = null
 			}).ToList();
 
 			OutboxMessages.AddRange(outboxMessages);

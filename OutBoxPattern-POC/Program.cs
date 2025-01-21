@@ -15,8 +15,6 @@ class Program
 {
 	static async Task Main(string[] args)
 	{
-
-
 		// Configure services
 		var services = new ServiceCollection();
 		services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("InMemoryDb"));
@@ -34,8 +32,12 @@ class Program
 
 		await orderService.PlaceOrderAsync(order);
 
-		// Process the outbox (simulate sending domain events to external systems)
-		Console.WriteLine("\nProcessing Outbox...");
-		await outboxService.ProcessOutboxAsync();
+		// Process the outbox every 5 seconds
+		while (true)
+		{
+			Console.WriteLine("\nProcessing Outbox...");
+			await outboxService.ProcessOutboxAsync();
+			await Task.Delay(5000);
+		}
 	}
 }

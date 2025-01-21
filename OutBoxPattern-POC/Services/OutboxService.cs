@@ -9,25 +9,31 @@ public class OutboxService(AppDbContext dbContext, IMediator mediator) : IOutbox
 {
 	public async Task ProcessOutboxAsync()
 	{
-		var messages = await dbContext.OutboxMessages.ToListAsync();
+		var messages = await dbContext.OutboxMessages.Where(x=>x.ProcessedOnUtc == null).ToListAsync();
 
 		var tasks = new List<Task>();
 
 		foreach (var message in messages)
 		{
-			// Deserialize the event
-			var eventType = Type.GetType(message.Type);
-			if (eventType == null) continue;
-
-			if (JsonSerializer.Deserialize(message.Content, eventType) is INotification domainEvent)
+			try
 			{
-				tasks.Add(mediator.Publish(domainEvent));
+				// Deserialize the event
+				var eventType = Type.GetType(message.Type);
+				if (eventType == null) continue;
+
+				if (JsonSerializer.Deserialize(message.Content, eventType) is INotification domainEvent)
+				{
+					tasks.Add(mediator.Publish(domainEvent));
+				}
+
+				// Mark as processed
+				message.ProcessedOnUtc = DateTime.UtcNow;
 			}
-
-
-			// Attach and mark as processed
-			
-			dbContext.OutboxMessages.Remove(message);
+			catch (Exception ex)
+			{
+				// Save error details
+				message.Error = ex.Message;
+			}
 		}
 
 		await Task.WhenAll(tasks);
